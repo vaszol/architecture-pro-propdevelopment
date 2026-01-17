@@ -1,0 +1,66 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  # Детальное логирование для security-related операций
+  - level: RequestResponse
+    verbs:
+      - create
+      - update
+      - patch
+    resources:
+      - group: ""
+        resources:
+          - pods
+          - namespaces
+      - group: "constraints.gatekeeper.sh"
+        resources:
+          - "*"
+    namespaces:
+      - audit-zone
+      - gatekeeper-system
+
+  # Логирование нарушений политик безопасности
+  - level: Request
+    verbs:
+      - create
+    resources:
+      - group: ""
+        resources:
+          - pods
+    omitStages:
+      - RequestReceived
+
+  # Логирование изменений RBAC
+  - level: Metadata
+    verbs:
+      - create
+      - delete
+      - update
+      - patch
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources:
+          - roles
+          - rolebindings
+          - clusterroles
+          - clusterrolebindings
+
+  # Логирование всех rejected запросов
+  - level: Request
+    verbs:
+      - "*"
+    resources:
+      - group: "*"
+        resources:
+          - "*"
+    omitStages:
+      - RequestReceived
+    userGroups:
+      - system:serviceaccounts
+
+  # Базовое логирование для всего остального
+  - level: Metadata
+    resources:
+      - group: "*"
+        resources:
+          - "*"
