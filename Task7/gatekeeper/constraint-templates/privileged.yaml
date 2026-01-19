@@ -1,0 +1,32 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sprohibitedprivileged
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sProhibitedPrivileged
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            message:
+              type: string
+              default: "Privileged containers are not allowed"
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sprohibitedprivileged
+        
+        violation[{"msg": msg, "details": {}}] {
+          container := input.review.object.spec.containers[_]
+          container.securityContext.privileged == true
+          msg := sprintf("Container '%v' is running in privileged mode", [container.name])
+        }
+        
+        violation[{"msg": msg, "details": {}}] {
+          container := input.review.object.spec.initContainers[_]
+          container.securityContext.privileged == true
+          msg := sprintf("Init container '%v' is running in privileged mode", [container.name])
+        }
